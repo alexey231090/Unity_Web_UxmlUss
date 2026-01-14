@@ -1,0 +1,247 @@
+:root {
+    /* Unity Dark Colors */
+    --bg-dark: #202020;
+    --bg-panel: #282828;
+    --bg-input: #181818;
+    --border: #353535;
+    --primary: #58a6ff; /* Более мягкий синий, как в VS Code/Unity */
+    --accent: #E67E22;
+    --text: #D0D0D0;
+    --text-muted: #999;
+    --nav-height: 60px;
+    --danger: #ff6b6b;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    margin: 0;
+    background: var(--bg-dark);
+    color: var(--text);
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* HEADER */
+header {
+    height: 50px;
+    background: linear-gradient(to bottom, #333, #252525); /* Градиент как в старых редакторах */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    border-bottom: 1px solid #111;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+.logo { font-weight: 600; font-size: 16px; letter-spacing: 0.5px; }
+.logo span { color: var(--primary); }
+.icon-btn {
+    background: #383838;
+    border: 1px solid #555;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.icon-btn:active { background: #555; }
+
+/* MAIN */
+main {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 80px;
+    background: #1e1e1e;
+}
+
+.hidden-view { display: none; }
+.active-view { display: block; animation: fadeEffect 0.2s; }
+@keyframes fadeEffect { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
+
+/* UXML BLOCKS */
+.scratch-canvas { padding: 15px; }
+
+.scratch-block {
+    background: #383838;
+    border-left: 4px solid var(--accent);
+    margin-bottom: 8px;
+    border-radius: 6px;
+    padding: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.1s;
+}
+.scratch-block.selected {
+    border: 1px solid var(--primary);
+    border-left: 4px solid var(--primary);
+    background: #404040;
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+    transform: scale(1.01);
+}
+
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px;
+}
+.block-type {
+    font-weight: 600; font-size: 13px; color: #fff; margin-right: 5px;
+}
+
+/* Inputs styling */
+input[type="text"], select {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--primary);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 13px;
+    outline: none;
+}
+input[type="text"]:focus { border-color: var(--primary); }
+
+.class-input { width: 90px; color: #a5d6ff !important; font-family: monospace; }
+.text-input { color: #cecece !important; }
+
+/* Зона для вложенных блоков с ЛИНИЕЙ */
+.block-children {
+    padding-left: 20px; /* Отступ побольше */
+    margin-top: 5px;
+    border-left: 2px dashed rgba(255, 255, 255, 0.2); /* Пунктирная линия слева */
+    margin-left: 10px;
+    min-height: 10px;
+}
+
+/* BUTTONS */
+.btn-delete {
+    background: none; border: none; color: #666; font-size: 16px; width: 30px; height: 30px;
+}
+.btn-delete:active { color: var(--danger); }
+
+/* FAB */
+.fab {
+    position: fixed; bottom: 80px; right: 20px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 32px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20;
+}
+.fab:active { transform: scale(0.9); }
+
+/* USS EDITOR */
+.uss-controls {
+    padding: 15px;
+    background: #252525;
+    border-bottom: 1px solid #333;
+    position: sticky; top: 0; z-index: 5;
+}
+
+.uss-class-card {
+    background: #2d2d2d;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #383838;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.prop-item {
+    background: #1f1f1f;
+    padding: 6px;
+    border-radius: 4px;
+    position: relative;
+    border: 1px solid #333;
+}
+.prop-item label {
+    font-size: 10px; color: #888; display: block; margin-bottom: 2px;
+}
+.prop-val {
+    width: 100%; border: none; background: transparent; padding: 2px 0; color: #fff; font-family: monospace;
+}
+
+.btn-del-prop {
+    position: absolute; right: 2px; top: 2px; font-size: 16px; padding: 5px; color: #555;
+}
+.btn-del-prop:active { color: var(--danger); }
+
+.add-prop-area {
+    margin-top: 15px; padding-top: 10px; border-top: 1px dashed #444;
+    display: flex; gap: 8px;
+}
+.uss-prop-select { flex: 1; background: #1a1a1a; color: #ccc; }
+.btn-add-prop-action { background: #383838; color: white; border: 1px solid #555; width: 35px; border-radius: 4px; }
+
+/* CODE PREVIEW */
+.preview-container { height: 100%; display: flex; flex-direction: column; }
+#game-view { flex: 1; border-bottom: 1px solid #444; }
+.code-section { height: 40%; background: #111; display: flex; flex-direction: column; }
+.code-header { background: #1a1a1a; color: #888; font-size: 11px; padding: 5px 10px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+textarea {
+    flex: 1; border: none; background: #111; color: #a9b7c6;
+    padding: 10px; font-family: 'Consolas', monospace; font-size: 11px;
+}
+
+/* NAV */
+.bottom-nav {
+    height: var(--nav-height);
+    background: #1e1e1e;
+    border-top: 1px solid #333;
+    display: flex;
+    position: fixed; bottom: 0; width: 100%; z-index: 100;
+}
+.nav-item {
+    flex: 1; background: none; border: none; color: #666;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 11px;
+    padding-bottom: 5px;
+}
+.nav-item .icon { font-size: 22px; margin-bottom: 4px; filter: grayscale(1); transition: 0.2s; }
+.nav-item.active { color: var(--primary); }
+.nav-item.active .icon { filter: grayscale(0); transform: scale(1.1); }
+
+/* MODAL */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 200;
+
+    /* Скрыто по умолчанию! */
+    display: none;
+
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+/* Когда убираем класс hidden, показываем флексом */
+.modal:not(.hidden) {
+    display: flex;
+}
+
+.modal-content {
+    background: #252525; width: 85%; border-radius: 12px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.modal-content {
+    background: #252525; width: 85%; border-radius: 12px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid #444;
+}
+.el-option {
+    display: block; width: 100%; padding: 15px; margin-bottom: 8px;
+    background: #333; border: 1px solid #444; color: white; text-align: left;
+    border-radius: 8px; font-size: 15px;
+    transition: 0.1s;
+}
+.el-option:active { background: var(--primary); border-color: var(--primary); }
+
+.btn-cancel { width: 100%; padding: 12px; margin-top: 10px; background: transparent; color: #888; border: none; }

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Важный мета-тег для мобилок: запрет масштабирования и подгонка под ширину -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unity UI Mobile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">Unity <span>UI Kit</span></div>
+    <!-- Новая кнопка очистки -->
+    <button onclick="clearWorkspace()" class="icon-btn" style="border-color: #ff5555; color: #ff5555;">🗑 Clear</button>
+</header>
+
+    <!-- Основной контент (Сменяемые экраны) -->
+    <main>
+        
+        <!-- ЭКРАН 1: РЕДАКТОР UXML -->
+        <section id="view-uxml" class="active-view">
+            <div id="root-canvas" class="scratch-canvas">
+                <!-- Сюда добавляются блоки -->
+            </div>
+            
+            <!-- Плавающая кнопка добавления (+) -->
+            <button id="fab-add" class="fab">+</button>
+        </section>
+
+        <!-- ЭКРАН 2: РЕДАКТОР USS -->
+        <section id="view-uss" class="hidden-view">
+            <div class="uss-controls">
+                <select id="uss-file-selector" class="big-select">
+                    <option value="default">MainTheme.uss</option>
+                    <option value="dark">DarkTheme.uss</option>
+                </select>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-class-name" placeholder="New class name (e.g. .btn)" style="flex:1; padding:10px; border-radius:4px; border:none;">
+                    <button id="btn-add-class" class="icon-btn" style="background:var(--primary); border:none;">+</button>
+                </div>
+            </div>
+
+            <!-- Сюда JS будет добавлять карточки стилей -->
+            <div id="uss-list"></div>
+        </section>
+
+        <!-- ЭКРАН 3: ПРЕВЬЮ + КОД -->
+        <section id="view-preview" class="hidden-view">
+            <div class="preview-container">
+                <!-- 1. Визуальный результат -->
+                <div class="panel-header">Game View</div>
+                <div id="game-view">
+                    <p style="text-align:center; color:#555; padding-top:20px;">Game View</p>
+                </div>
+
+                <!-- 2. Генерация кода -->
+                <div class="code-section">
+                    <div class="code-header">
+                        <span>📄 Generated UXML</span>
+                        <button class="btn-copy-mini" onclick="copyToClipboard('out-uxml')">Copy</button>
+                    </div>
+                    <textarea id="out-uxml" readonly></textarea>
+
+                    <div class="code-header" style="margin-top:10px;">
+                        <span>🎨 Generated USS</span>
+                        <button class="btn-copy-mini" onclick="copyToClipboard('out-uss')">Copy</button>
+                    </div>
+                    <textarea id="out-uss" readonly></textarea>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Нижнее меню навигации (Tabs) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-target="view-uxml">
+            <span class="icon">🧱</span>
+            <span>UXML</span>
+        </button>
+        <button class="nav-item" data-target="view-uss">
+            <span class="icon">🎨</span>
+            <span>USS</span>
+        </button>
+        <button class="nav-item" data-target="view-preview">
+            <span class="icon">▶️</span>
+            <span>Play</span>
+        </button>
+    </nav>
+
+    <!-- Модальное окно выбора элемента (скрыто по умолчанию) -->
+    <div id="modal-add" class="modal hidden">
+        <div class="modal-content">
+            <h3>Добавить элемент</h3>
+            <div class="element-list">
+                <button class="el-option" data-type="VisualElement">VisualElement (Div)</button>
+                <button class="el-option" data-type="Label">Label (Text)</button>
+                <button class="el-option" data-type="Button">Button</button>
+                <button class="el-option" data-type="TextField">TextField</button>
+                <button class="el-option" data-type="Toggle">Toggle</button>
+            </div>
+            <button id="modal-close" class="btn-cancel">Отмена</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
