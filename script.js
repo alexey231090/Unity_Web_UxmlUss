@@ -21,7 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
         "opacity", "display", "position", "left", "top", "right", "bottom"
     ];
 
+    const unityPropertyValues = {
+        "display": ["flex", "none"],
+        "flex-direction": ["row", "column"],
+        "justify-content": ["flex-start", "center", "flex-end", "space-between", "space-around"],
+        "align-items": ["stretch", "flex-start", "center", "flex-end"],
+        "flex-wrap": ["nowrap", "wrap"],
+        "position": ["relative", "absolute"],
+        "-unity-text-align": [
+            "upper-left", "upper-center", "upper-right",
+            "middle-left", "middle-center", "middle-right",
+            "lower-left", "lower-center", "lower-right"
+        ],
+        "-unity-font-style": ["normal", "bold", "italic", "bold-and-italic"]
+    };
+
     let currentTheme = "default";
+    let lastSwapClasses = null;
 
     // UI ссылки
     const rootCanvas = document.getElementById('root-canvas');
@@ -55,6 +71,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ЛОГИКА БЛОКОВ (UXML) ---
     rootCanvas.addEventListener('click', (e) => {
         if(e.target === rootCanvas) deselectAll();
+    });
+
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+        const isBlock = target.closest('.scratch-block');
+        const isFab = target.id === 'fab-add';
+        const inModal = target.closest('#modal-add');
+        if (!isBlock && !isFab && !inModal) {
+            deselectAll();
+        }
     });
 
     function deselectAll() {
@@ -99,24 +125,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="block-type">${type}</span>
                     ${inputsHTML}
                 </div>
-                <button class="btn-delete">✕</button>
+                <div class="block-actions">
+                    <button class="btn-link">+</button>
+                    <button class="btn-delete">✕</button>
+                </div>
             </div>
             <div class="block-children"></div>
         `;
 
         // Обработчики
         div.addEventListener('click', (e) => {
-            if(e.target.tagName === 'INPUT' || e.target.classList.contains('btn-delete')) return;
+            if(e.target.tagName === 'INPUT' || e.target.classList.contains('btn-delete') || e.target.classList.contains('btn-link')) return;
             e.stopPropagation();
             selectBlock(div);
         });
 
-        div.querySelector('.btn-delete').addEventListener('click', (e) => {
+        const deleteBtn = div.querySelector('.btn-delete');
+        deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if(confirm('Удалить блок?')) {
                 div.remove();
                 if(selectedBlock === div) selectedBlock = null;
+                updateBlockLinks();
             }
+        });
+
+        const linkBtn = div.querySelector('.btn-link');
+        linkBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleLinkClick(div);
         });
 
         if (selectedBlock) {
@@ -125,6 +162,69 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             rootCanvas.appendChild(div);
         }
+
+        updateBlockLinks();
+    }
+
+    function updateBlockLinks() {
+        const blocks = document.querySelectorAll('.scratch-block');
+        blocks.forEach(block => {
+            const btn = block.querySelector('.btn-link');
+            if (!btn) return;
+
+            const parentBlock = block.parentElement.closest('.scratch-block');
+            let container;
+            if (parentBlock) {
+                container = parentBlock.querySelector('.block-children');
+            } else {
+                container = rootCanvas;
+            }
+
+            const siblings = Array.from(container.children).filter(c => c.classList.contains('scratch-block'));
+            const index = siblings.indexOf(block);
+
+            if (!parentBlock) {
+                if (index > 0) {
+                    btn.style.visibility = 'visible';
+                    btn.textContent = '+';
+                    btn.dataset.mode = 'attach';
+                } else {
+                    btn.style.visibility = 'hidden';
+                    btn.dataset.mode = '';
+                }
+            } else {
+                btn.style.visibility = 'visible';
+                btn.textContent = '-';
+                btn.dataset.mode = 'detach';
+            }
+        });
+    }
+
+    function handleLinkClick(block) {
+        const btn = block.querySelector('.btn-link');
+        if (!btn) return;
+        const mode = btn.dataset.mode;
+        if (!mode) return;
+
+        if (mode === 'attach') {
+            const container = rootCanvas;
+            const siblings = Array.from(container.children).filter(c => c.classList.contains('scratch-block'));
+            const index = siblings.indexOf(block);
+            if (index <= 0) return;
+            const upper = siblings[index - 1];
+            const childContainer = upper.querySelector('.block-children');
+            if (childContainer) {
+                childContainer.appendChild(block);
+            }
+        } else if (mode === 'detach') {
+            const parentBlock = block.parentElement.closest('.scratch-block');
+            if (!parentBlock) return;
+            const parentContainer = parentBlock.parentElement.closest('.scratch-canvas, .block-children');
+            if (!parentContainer) return;
+            parentContainer.insertBefore(block, parentBlock.nextSibling);
+        }
+
+        updateBlockLinks();
     }
 
     // --- USS EDITOR ---
@@ -174,30 +274,56 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const [className, props] of Object.entries(classes)) {
             const card = document.createElement('div');
             card.className = 'uss-class-card';
+            if (lastSwapClasses && lastSwapClasses.includes(className)) {
+                card.classList.add('uss-swap-highlight');
+            }
 
             let propsHTML = '';
             for (const [propName, propValue] of Object.entries(props)) {
-                propsHTML += `
-                    <div class="prop-item">
-                        <label>${propName}</label>
-                        <input type="text" class="prop-val" 
-                               data-class="${className}" 
-                               data-prop="${propName}" 
-                               value="${propValue}">
-                        <button class="btn-del-prop" onclick="deleteProp('${className}', '${propName}')">×</button>
-                    </div>
-                `;
+                const enumValues = unityPropertyValues[propName];
+                if (enumValues) {
+                    const options = enumValues
+                        .map(v => `<option value="${v}" ${v === propValue ? 'selected' : ''}>${v}</option>`)
+                        .join('');
+                    propsHTML += `
+                        <div class="prop-item">
+                            <label>${propName}</label>
+                            <select class="prop-val" 
+                                    data-class="${className}" 
+                                    data-prop="${propName}">
+                                ${options}
+                            </select>
+                            <button class="btn-del-prop" onclick="deleteProp('${className}', '${propName}')">×</button>
+                        </div>
+                    `;
+                } else {
+                    propsHTML += `
+                        <div class="prop-item">
+                            <label>${propName}</label>
+                            <input type="text" class="prop-val" 
+                                   data-class="${className}" 
+                                   data-prop="${propName}" 
+                                   value="${propValue}">
+                            <button class="btn-del-prop" onclick="deleteProp('${className}', '${propName}')">×</button>
+                        </div>
+                    `;
+                }
             }
 
             const optionsHTML = unityProperties.map(p => `<option value="${p}">${p}</option>`).join('');
 
             card.innerHTML = `
-                <div class="class-header" style="justify-content:space-between;">
+                <div class="class-header" style="justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center;">
                         <span class="dot">.</span>
                         <strong style="font-size:16px; color:#ddd;">${className}</strong>
                     </div>
                     <button class="btn-delete-class" onclick="deleteClass('${className}')">🗑</button>
+                </div>
+
+                <div class="class-reorder">
+                    <button class="btn-move-class" onclick="moveClass('${className}', -1)">⬆</button>
+                    <button class="btn-move-class" onclick="moveClass('${className}', 1)">⬇</button>
                 </div>
                 
                 <div class="props-grid">
@@ -214,14 +340,27 @@ document.addEventListener('DOMContentLoaded', () => {
             ussListContainer.appendChild(card);
         }
 
-        const inputs = ussListContainer.querySelectorAll('.prop-val');
+        const inputs = ussListContainer.querySelectorAll('input.prop-val');
         inputs.forEach(inp => {
-            inp.addEventListener('input', (e) => {
+            const handler = (e) => {
+                const cName = e.target.getAttribute('data-class');
+                const cProp = e.target.getAttribute('data-prop');
+                ussDatabase[currentTheme][cName][cProp] = e.target.value;
+            };
+            inp.addEventListener('input', handler);
+            inp.addEventListener('change', handler);
+        });
+
+        const selects = ussListContainer.querySelectorAll('select.prop-val');
+        selects.forEach(sel => {
+            sel.addEventListener('change', (e) => {
                 const cName = e.target.getAttribute('data-class');
                 const cProp = e.target.getAttribute('data-prop');
                 ussDatabase[currentTheme][cName][cProp] = e.target.value;
             });
         });
+
+        lastSwapClasses = null;
     }
 
     // --- PREVIEW ---
@@ -314,26 +453,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const classInput = scratchBlock.querySelector('.uxml-class');
         if (classInput && classInput.value) el.classList.add(classInput.value);
 
-        // Добавляем текст (если есть)
-        const textInput = scratchBlock.querySelector('.uxml-text');
-        if (textInput && textInput.value) {
-            if (type === 'TextField') el.value = textInput.value;
-            else if (type === 'Toggle') el.querySelector('span').innerText = textInput.value;
-            else el.innerText = textInput.value;
-        }
-
-        // --- ИСПРАВЛЕНИЕ: БОЛЬШЕ НЕТ АВТОМАТИЧЕСКОГО ТЕКСТА "LABEL" ---
-        // Раньше тут был код, который писал "Label", если пусто. Я его удалил.
-
         // Обрабатываем детей (вложенные блоки)
         const childrenContainer = scratchBlock.querySelector('.block-children');
+        const childBlocks = [];
         if (childrenContainer) {
-            const childBlocks = Array.from(childrenContainer.children).filter(c => c.classList.contains('scratch-block'));
+            Array.from(childrenContainer.children)
+                .filter(c => c.classList.contains('scratch-block'))
+                .forEach(child => {
+                    childBlocks.push(child);
+                });
             childBlocks.forEach(child => {
                 const childEl = convertBlockToElement(child);
                 if(childEl) el.appendChild(childEl);
             });
         }
+
+        // Добавляем текст (если есть) только для "листовых" элементов (без детей),
+        // чтобы не было эффекта "два текста" у родителя и дочернего блока.
+        const textInput = scratchBlock.querySelector('.uxml-text');
+        if (textInput && textInput.value && childBlocks.length === 0) {
+            if (type === 'TextField') el.value = textInput.value;
+            else if (type === 'Toggle') el.querySelector('span').innerText = textInput.value;
+            else el.innerText = textInput.value;
+        }
+
         return el;
     }
 
@@ -344,24 +487,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const textVal = textInput ? textInput.value : '';
         const tagName = `ui:${type}`;
 
-        let attributes = "";
-        if(className) attributes += ` class="${className}"`;
-        if(textVal && (type === 'Button' || type === 'Label' || type === 'Toggle')) attributes += ` text="${textVal}"`;
-        if(type === 'TextField') attributes += ` value="${textVal}"`;
-
         const space = "    ".repeat(indentLevel);
         const childrenContainer = block.querySelector('.block-children');
         const childBlocks = childrenContainer
             ? Array.from(childrenContainer.children).filter(c => c.classList.contains('scratch-block'))
             : [];
 
+        let attributes = "";
+        if(className) attributes += ` class="${className}"`;
+
+        // Если у элемента есть дети, не пишем text="" для Button/Label/Toggle,
+        // чтобы избежать дублирования текста родителя и дочерних элементов.
+        if (childBlocks.length === 0) {
+            if(textVal && (type === 'Button' || type === 'Label' || type === 'Toggle')) {
+                attributes += ` text="${textVal}"`;
+            }
+            if(type === 'TextField') {
+                attributes += ` value="${textVal}"`;
+            }
+        } else {
+            if(type === 'TextField' && textVal) {
+                attributes += ` value="${textVal}"`;
+            }
+        }
+
         if (childBlocks.length === 0) {
             return `${space}<${tagName}${attributes} />\n`;
-        } else {
-            let innerHTML = "";
-            childBlocks.forEach(child => innerHTML += generateUXMLRecursive(child, indentLevel + 1));
-            return `${space}<${tagName}${attributes}>\n${innerHTML}${space}</${tagName}>\n`;
         }
+
+        let innerHTML = "";
+        childBlocks.forEach(child => innerHTML += generateUXMLRecursive(child, indentLevel + 1));
+        return `${space}<${tagName}${attributes}>\n${innerHTML}${space}</${tagName}>\n`;
     }
 
     // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ (ДЛЯ HTML) ---
@@ -379,11 +535,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const select = document.getElementById(`sel-${className}`);
         const newProp = select.value;
         if(!ussDatabase[currentTheme][className][newProp]) {
-            ussDatabase[currentTheme][className][newProp] = "0px";
-            if(newProp.includes('color')) ussDatabase[currentTheme][className][newProp] = "#ffffff";
-            if(newProp === 'flex-direction') ussDatabase[currentTheme][className][newProp] = "column";
-            if(newProp === 'align-items') ussDatabase[currentTheme][className][newProp] = "stretch";
+            let defaultValue = "0px";
+            if(newProp.includes('color')) defaultValue = "#ffffff";
+            if(newProp === 'flex-direction') defaultValue = "column";
+            if(newProp === 'align-items') defaultValue = "stretch";
+            const enumValues = unityPropertyValues[newProp];
+            if (enumValues && enumValues.length > 0) {
+                defaultValue = enumValues[0];
+            }
+            ussDatabase[currentTheme][className][newProp] = defaultValue;
         }
+        renderUSS();
+    };
+    window.moveClass = function(className, direction) {
+        const themeStyles = ussDatabase[currentTheme];
+        const names = Object.keys(themeStyles);
+        const index = names.indexOf(className);
+        if (index === -1) return;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= names.length) return;
+
+        const sourceName = className;
+        const targetName = names[newIndex];
+
+        const temp = names[index];
+        names[index] = names[newIndex];
+        names[newIndex] = temp;
+
+        const reordered = {};
+        names.forEach(n => {
+            reordered[n] = themeStyles[n];
+        });
+        ussDatabase[currentTheme] = reordered;
+
+        lastSwapClasses = [sourceName, targetName];
         renderUSS();
     };
     window.copyToClipboard = function(elementId) {

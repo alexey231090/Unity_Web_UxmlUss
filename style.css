@@ -93,7 +93,7 @@ main {
 }
 
 /* Inputs styling */
-input[type="text"], select {
+input[type="text"] {
     background: var(--bg-input);
     border: 1px solid var(--border);
     color: var(--primary);
@@ -121,6 +121,21 @@ input[type="text"]:focus { border-color: var(--primary); }
     background: none; border: none; color: #666; font-size: 16px; width: 30px; height: 30px;
 }
 .btn-delete:active { color: var(--danger); }
+
+.block-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #7bdc7b;
+    font-size: 18px;
+    width: 30px;
+    height: 30px;
+}
 
 /* FAB */
 .fab {
@@ -152,6 +167,7 @@ input[type="text"]:focus { border-color: var(--primary); }
     border-radius: 8px;
     border: 1px solid #383838;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
@@ -169,17 +185,74 @@ input[type="text"]:focus { border-color: var(--primary); }
     width: 100%; border: none; background: transparent; padding: 2px 0; color: #fff; font-family: monospace;
 }
 
-.btn-del-prop {
-    position: absolute; right: 2px; top: 2px; font-size: 16px; padding: 5px; color: #555;
+select.prop-val {
+    background: #1a1a1a;
+    color: #fff;
 }
-.btn-del-prop:active { color: var(--danger); }
+
+select.prop-val option,
+.uss-prop-select option {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.btn-del-prop {
+    position: absolute; right: 2px; top: 2px; font-size: 16px; padding: 5px; color: var(--danger);
+}
+.btn-del-prop:active { color: #ffb0b0; }
 
 .add-prop-area {
     margin-top: 15px; padding-top: 10px; border-top: 1px dashed #444;
     display: flex; gap: 8px;
 }
-.uss-prop-select { flex: 1; background: #1a1a1a; color: #ccc; }
+.uss-prop-select { flex: 1; background: #1a1a1a; color: #fff; }
+
+.btn-move-class,
+.btn-delete-class {
+    background: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 16px;
+    border: 1px solid #555;
+    color: #ccc;
+}
+
+.btn-move-class:active {
+    background: #444;
+}
+
+.btn-delete-class {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.btn-delete-class:active {
+    background: var(--danger);
+    color: #fff;
+}
 .btn-add-prop-action { background: #383838; color: white; border: 1px solid #555; width: 35px; border-radius: 4px; }
+
+.class-reorder {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.uss-swap-highlight {
+    animation: ussSwapBlink 0.25s ease-out;
+}
+
+@keyframes ussSwapBlink {
+    0% {
+        transform: scale(1.03);
+        background-color: #3a3a3a;
+    }
+    100% {
+        transform: scale(1);
+        background-color: #2d2d2d;
+    }
+}
 
 /* CODE PREVIEW */
 .preview-container { height: 100%; display: flex; flex-direction: column; }
