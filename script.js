@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (targetId === 'view-uss') renderUSS();
             if (targetId === 'view-preview') generatePreview();
+            if (targetId === 'view-code') generatePreview();
         });
     });
 
@@ -163,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rootCanvas.appendChild(div);
         }
 
+        initDragAndDrop(div);
         updateBlockLinks();
     }
 
@@ -224,7 +226,144 @@ document.addEventListener('DOMContentLoaded', () => {
             parentContainer.insertBefore(block, parentBlock.nextSibling);
         }
 
+        initDragAndDrop(block);
         updateBlockLinks();
+    }
+
+    // --- DRAG & DROP ---
+    let draggedBlock = null;
+    let dragGhost = null;
+    let dropTarget = null;
+
+    function initDragAndDrop(block) {
+        block.setAttribute('draggable', 'true');
+        block.addEventListener('dragstart', handleDragStart);
+        block.addEventListener('dragover', handleDragOver);
+        block.addEventListener('dragenter', handleDragEnter);
+        block.addEventListener('dragleave', handleDragLeave);
+        block.addEventListener('drop', handleDrop);
+        block.addEventListener('dragend', handleDragEnd);
+    }
+
+    function handleDragStart(e) {
+        draggedBlock = e.target.closest('.scratch-block');
+        if (!draggedBlock) return;
+        e.dataTransfer.setData('text/plain', ''); // требуется для Firefox
+        e.dataTransfer.effectAllowed = 'move';
+        draggedBlock.classList.add('dragging');
+        
+        // Создаем призрак
+        dragGhost = draggedBlock.cloneNode(true);
+        dragGhost.classList.add('drag-ghost');
+        dragGhost.style.width = `${draggedBlock.offsetWidth}px`;
+        dragGhost.style.height = `${draggedBlock.offsetHeight}px`;
+        dragGhost.style.position = 'fixed';
+        dragGhost.style.left = '-1000px';
+        document.body.appendChild(dragGhost);
+        e.dataTransfer.setDragImage(dragGhost, 0, 0);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    }
+
+    function handleDragEnter(e) {
+        const target = e.target.closest('.scratch-block, .block-children, .scratch-canvas');
+        if (!target) return;
+        dropTarget = target;
+        if (target.classList.contains('scratch-block')) {
+            target.classList.add('drag-over');
+        } else if (target.classList.contains('block-children') || target.classList.contains('scratch-canvas')) {
+            target.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave(e) {
+        const target = e.target.closest('.scratch-block, .block-children, .scratch-canvas');
+        if (!target) return;
+        target.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = e.target.closest('.scratch-block, .block-children, .scratch-canvas');
+        if (!target || !draggedBlock) return;
+
+        // Убираем подсветку
+        document.querySelectorAll('.scratch-block.drag-over, .block-children.drag-over, .scratch-canvas.drag-over').forEach(el => {
+            el.classList.remove('drag-over');
+        });
+
+        // Определяем контейнер и позицию
+        let container;
+        let beforeElement = null;
+
+        if (target.classList.contains('scratch-block')) {
+            // Бросили на блок: вставляем перед ним или в его children?
+            const rect = target.getBoundingClientRect();
+            const relativeY = e.clientY - rect.top;
+            const childrenContainer = target.querySelector('.block-children');
+            
+            // Если есть контейнер для детей и курсор в нижней половине блока - вставляем внутрь
+            if (childrenContainer && relativeY > rect.height / 2) {
+                container = childrenContainer;
+            } else {
+                // Вставляем перед блоком
+                container = target.parentElement;
+                beforeElement = target;
+            }
+        } else if (target.classList.contains('block-children')) {
+            container = target;
+        } else if (target.classList.contains('scratch-canvas')) {
+            container = target;
+        } else {
+            container = rootCanvas;
+        }
+
+        // Проверяем, что не пытаемся вставить элемент внутрь самого себя или внутрь своего потомка
+        if (draggedBlock === target || draggedBlock.contains(target)) {
+            return;
+        }
+
+        // Проверяем, что не пытаемся вставить элемент внутрь своего же контейнера (просто меняем порядок)
+        if (container.contains(draggedBlock)) {
+            // Если элемент уже в этом контейнере, просто меняем позицию
+            // Удаляем из текущего положения
+            draggedBlock.parentElement.removeChild(draggedBlock);
+        }
+
+        // Вставляем
+        if (beforeElement) {
+            container.insertBefore(draggedBlock, beforeElement);
+        } else {
+            container.appendChild(draggedBlock);
+        }
+
+        updateBlockLinks();
+        dropTarget = null;
+    }
+
+    function handleDragEnd(e) {
+        if (draggedBlock) {
+            draggedBlock.classList.remove('dragging');
+            draggedBlock = null;
+        }
+        if (dragGhost) {
+            dragGhost.remove();
+            dragGhost = null;
+        }
+        document.querySelectorAll('.scratch-block.drag-over, .block-children.drag-over, .scratch-canvas.drag-over').forEach(el => {
+            el.classList.remove('drag-over');
+        });
+    }
+
+    // Инициализация drag-and-drop для существующих блоков
+    function initAllDragAndDrop() {
+        document.querySelectorAll('.scratch-block').forEach(block => {
+            initDragAndDrop(block);
+        });
     }
 
     // --- USS EDITOR ---
@@ -591,4 +730,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Старт (создаем 1 блок)
     createBlock('VisualElement');
+    initAllDragAndDrop();
 });

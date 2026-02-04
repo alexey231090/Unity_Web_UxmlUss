@@ -45,7 +45,7 @@
             <div id="uss-list"></div>
         </section>
 
-        <!-- ЭКРАН 3: ПРЕВЬЮ + КОД -->
+        <!-- ЭКРАН 3: ПРЕВЬЮ -->
         <section id="view-preview" class="hidden-view">
             <div class="preview-container">
                 <!-- 1. Визуальный результат -->
@@ -53,16 +53,21 @@
                 <div id="game-view">
                     <p style="text-align:center; color:#555; padding-top:20px;">Game View</p>
                 </div>
+            </div>
+        </section>
 
-                <!-- 2. Генерация кода -->
-                <div class="code-section">
+        <!-- ЭКРАН 4: СГЕНЕРИРОВАННЫЙ КОД -->
+        <section id="view-code" class="hidden-view">
+            <div class="code-container">
+                <div class="code-column">
                     <div class="code-header">
                         <span>📄 Generated UXML</span>
                         <button class="btn-copy-mini" onclick="copyToClipboard('out-uxml')">Copy</button>
                     </div>
                     <textarea id="out-uxml" readonly></textarea>
-
-                    <div class="code-header" style="margin-top:10px;">
+                </div>
+                <div class="code-column">
+                    <div class="code-header">
                         <span>🎨 Generated USS</span>
                         <button class="btn-copy-mini" onclick="copyToClipboard('out-uss')">Copy</button>
                     </div>
@@ -86,6 +91,10 @@
         <button class="nav-item" data-target="view-preview">
             <span class="icon">▶️</span>
             <span>Play</span>
+        </button>
+        <button class="nav-item" data-target="view-code">
+            <span class="icon">📋</span>
+            <span>Code</span>
         </button>
     </nav>
 
